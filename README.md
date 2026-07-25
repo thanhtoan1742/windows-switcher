@@ -65,13 +65,13 @@ Only Tab keydowns with Cmd held are consumed; all other keystrokes pass through 
 ./test.sh
 ```
 
-Uses Swift Testing (`import Testing`). The `test.sh` wrapper wires up the `Testing.framework` paths for Command Line Tools-only environments (Xcode is not required). Pure logic — window filtering, the cycling state machine, key classification, and frame matching — is fully unit-tested; the event tap and AX integration are verified manually.
+Uses Swift Testing (`import Testing`). The `test.sh` wrapper wires up the `Testing.framework` paths for Command Line Tools-only environments (Xcode is not required). Pure logic — window filtering, the cycling state machine, key classification, event-tap consume/passthrough decisions, the raise-path two-pass matcher, row layout math, and frame matching — is fully unit-tested; the live `CGEventTap`, `AXUIElement` calls, and AppKit rendering are verified manually.
 
 ## Project layout
 
 ```
 Sources/
-  WindowsSwitcherCore/   # Testable core: WindowLister, Switcher, KeyClassifier, WindowRaiser, EventTap
+  WindowsSwitcherCore/   # Testable core: WindowLister, Switcher, KeyClassifier, WindowRaiser, RaiseMatcher, EventTap, RowLayout
   WindowsSwitcher/       # App entry point: AppDelegate, ThumbnailCapturer, ThumbnailOverlay
 Tests/
   WindowsSwitcherTests/  # Swift Testing suites
