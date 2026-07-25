@@ -100,13 +100,13 @@ import WindowsSwitcherCore
         else { badgeColor = nil }
 
         let symbol = NSImage(
-            systemSymbolName: "arrow.right.arrow.left.square",
+            systemSymbolName: "arrow.right.arrow.left.square.fill",
             accessibilityDescription: "Windows Switcher"
         )!
-        let canvasSize = NSSize(width: 18, height: 18)
-        let symbolSize = NSSize(width: 14, height: 14)
-        let badgeRadius: CGFloat = 3.0
-        let badgeInset: CGFloat = 1.5
+        let canvasSize = NSSize(width: 23.4, height: 23.4)
+        let symbolSize = NSSize(width: 18.2, height: 18.2)
+        let badgeRadius: CGFloat = 3.9
+        let badgeInset: CGFloat = 1.95
 
         func compose(symbolTint: NSColor) -> NSImage {
             let image = NSImage(size: canvasSize, flipped: false) { rect in
