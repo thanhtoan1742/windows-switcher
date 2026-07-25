@@ -29,6 +29,8 @@ This produces `WindowsSwitcher.app` from the release binary.
 open WindowsSwitcher.app
 ```
 
+> **Note:** `make-app.sh` does not code-sign the bundle. On first launch macOS Gatekeeper will warn that the app is from an unidentified developer. To bypass: right-click `WindowsSwitcher.app` → **Open** → **Open**, or run `xattr -d com.apple.quarantine /path/to/WindowsSwitcher.app` before opening.
+
 On first launch:
 1. A **red dot** appears in the menubar — the app needs Accessibility permission.
 2. Open **System Settings → Privacy & Security → Accessibility** and enable *Windows Switcher*.
@@ -53,7 +55,7 @@ The window list and thumbnails are snapshotted when you press Cmd, so cycling st
 2. A pure `KeyClassifier` translates each event into a `KeyAction` (`cmdDown`, `cmdUp`, `tabForward`, `tabBackward`, `ignore`).
 3. On Cmd-down, `WindowLister` snapshots on-screen windows on the current Space via `CGWindowListCopyWindowInfo`, and `ThumbnailCapturer` captures each window's content via `CGWindowListCreateImage`.
 4. Each Tab tap advances a cursor in the frozen list and moves a selection ring across a centered row of `ThumbnailOverlay` thumbnails — no window is raised during cycling.
-5. On Cmd-up, `WindowRaiser` resolves the selected window's AX element by matching its frame and raises it via `AXUIElementPerformAction(kAXRaiseAction)`.
+5. On Cmd-up, `WindowRaiser` resolves the selected window's AX element by matching its `CGWindowID` via the private `_AXUIElementGetWindow` bridge (primary path), with a frame-matching fallback (1pt epsilon) for apps where the bridge errors. It raises the window via `AXUIElementPerformAction(kAXRaiseAction)`.
 
 Only Tab keydowns with Cmd held are consumed; all other keystrokes pass through untouched.
 
@@ -63,13 +65,13 @@ Only Tab keydowns with Cmd held are consumed; all other keystrokes pass through 
 ./test.sh
 ```
 
-Uses Swift Testing (`import Testing`). The `test.sh` wrapper wires up the `Testing.framework` paths for Command Line Tools-only environments (Xcode is not required). Pure logic — window filtering, the cycling state machine, key classification, and frame matching — is fully unit-tested; the event tap and AX integration are verified manually.
+Uses Swift Testing (`import Testing`). The `test.sh` wrapper wires up the `Testing.framework` paths for Command Line Tools-only environments (Xcode is not required). Pure logic — window filtering, the cycling state machine, key classification, event-tap consume/passthrough decisions, the raise-path two-pass matcher, row layout math, and frame matching — is fully unit-tested; the live `CGEventTap`, `AXUIElement` calls, and AppKit rendering are verified manually.
 
 ## Project layout
 
 ```
 Sources/
-  WindowsSwitcherCore/   # Testable core: WindowLister, Switcher, KeyClassifier, WindowRaiser, EventTap
+  WindowsSwitcherCore/   # Testable core: WindowLister, Switcher, KeyClassifier, WindowRaiser, RaiseMatcher, EventTap, RowLayout
   WindowsSwitcher/       # App entry point: AppDelegate, ThumbnailCapturer, ThumbnailOverlay
 Tests/
   WindowsSwitcherTests/  # Swift Testing suites

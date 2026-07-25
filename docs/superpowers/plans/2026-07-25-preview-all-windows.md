@@ -282,7 +282,7 @@ Expected (manual check):
 - Shift+Tab moves the ring left; wraps at both ends.
 - All thumbnails stay the same size; only the ring moves.
 - Release Cmd: the row hides and the ringed window comes to front.
-- With many windows open, thumbnails shrink to fit; at extreme counts the row overflows symmetrically.
+- With many windows open, thumbnails shrink to fit; at extreme counts cells shrink below 80pt but all remain visible (no off-screen overflow).
 
 Quit the app when done.
 

@@ -51,14 +51,16 @@ struct WindowListerTests {
         #expect(out.isEmpty)
     }
 
-    @Test("filters system owners")
+    @Test("filters all known system owners")
     func filtersSystemOwners() {
         let out = WindowLister.filter([
             entry(id: 1, pid: 100, owner: "Dock"),
             entry(id: 2, pid: 101, owner: "SystemUIServer"),
             entry(id: 3, pid: 102, owner: "WindowServer"),
             entry(id: 4, pid: 103, owner: "Control Center"),
-            entry(id: 5, pid: 104, owner: "Safari"),
+            entry(id: 5, pid: 104, owner: "Wallpaper"),
+            entry(id: 6, pid: 105, owner: "WindowManager"),
+            entry(id: 7, pid: 106, owner: "Safari"),
         ])
         #expect(out.count == 1)
         #expect(out[0].ownerName == "Safari")

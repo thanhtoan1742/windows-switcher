@@ -4,7 +4,7 @@ import Foundation
 @testable import WindowsSwitcherCore
 
 @Suite("Switcher")
-struct SwitcherTests {
+@MainActor struct SwitcherTests {
     private func win(_ id: UInt32, _ pid: Int32 = 1) -> WindowInfo {
         WindowInfo(windowID: id, ownerPID: pid, ownerName: "app\(id)",
                     bounds: CGRect(x: 0, y: 0, width: 100, height: 100), layer: 0, alpha: 1.0)
@@ -26,7 +26,7 @@ struct SwitcherTests {
         s.beginSession(windows: [win(1), win(2), win(3)])
         #expect(s.snapshot.count == 3)
         #expect(s.cursor == 0)
-        #expect(s.isCmdDown)
+        #expect(s.sessionActive)
         #expect(capturer.captureOrder == [1, 2, 3])
         #expect(previewer.showCalls.count == 1)
         #expect(previewer.showCalls[0].startingAt == 0)
@@ -113,7 +113,7 @@ struct SwitcherTests {
         s.beginSession(windows: [win(1), win(2), win(3)])
         _ = s.tap(forward: true)
         s.endSession()
-        #expect(!s.isCmdDown)
+        #expect(!s.sessionActive)
         #expect(previewer.hideCallCount == 1)
         #expect(raiser.raised.count == 1)
         #expect(raiser.raised[0].windowID == 2)
