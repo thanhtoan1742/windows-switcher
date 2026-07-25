@@ -26,7 +26,7 @@ public protocol WindowPreviewing: AnyObject {
     /// Cmd-up with no prior Cmd-down is a no-op. Note: remains true even when
     /// all captures return nil (strict-mode silent no-op session) so that
     /// `endSession` still calls `previewer.hide()` for symmetry.
-    private(set) var sessionActive: Bool = false
+    public private(set) var sessionActive: Bool = false
 
     public init(raiser: WindowRaising, previewer: WindowPreviewing, capturer: ThumbnailCapturing) {
         self.raiser = raiser
@@ -34,10 +34,13 @@ public protocol WindowPreviewing: AnyObject {
         self.capturer = capturer
     }
 
-    /// Called on Cmd-down. Captures a thumbnail per window, filters the snapshot
-    /// to only successfully captured windows, and tells the previewer to show.
-    /// If every capture failed, the session is a silent no-op (strict mode).
-    public func beginSession(windows: [WindowInfo]) {
+    /// Called on the first Tab while Cmd is held. Captures a thumbnail per
+    /// window, filters the snapshot to only successfully captured windows,
+    /// advances the cursor once in the requested direction, and tells the
+    /// previewer to show at the advanced index. If every capture failed, the
+    /// session is a silent no-op (strict mode). Holding Cmd alone does
+    /// nothing; the session starts here, not on Cmd-down.
+    public func beginSession(windows: [WindowInfo], forward: Bool) {
         let pairs: [(WindowInfo, CGImage)] = windows.compactMap {
             guard let img = capturer.capture($0) else { return nil }
             return ($0, img)
@@ -46,7 +49,10 @@ public protocol WindowPreviewing: AnyObject {
         cursor = 0
         sessionActive = true
         guard !pairs.isEmpty else { return }
-        previewer.show(thumbnails: pairs, startingAt: 0)
+        if snapshot.count >= 2 {
+            cursor = forward ? 1 : snapshot.count - 1
+        }
+        previewer.show(thumbnails: pairs, startingAt: cursor)
     }
 
     /// Called on Tab keydown while Cmd is held. `forward = !shift`. Advances the

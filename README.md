@@ -5,6 +5,7 @@ A minimal macOS app that replaces the default Cmd+Tab app-switcher with Windows/
 - **Native Swift + AppKit** — no third-party dependencies
 - **Background app** (`LSUIElement`) — menubar dot, no Dock icon
 - **Preview overlay** — all window thumbnails shown at once in a centered row; a selection ring moves as you cycle, and nothing is raised until you release Cmd
+- **Lazy session** — holding Cmd alone does nothing; the session (snapshot + preview) starts on the first Tab
 - **Small footprint** — no caching, no timers; idle between taps
 
 ## Requirements
@@ -47,14 +48,14 @@ To quit: click the menubar dot → *Quit*.
 | Hold `Cmd` + tap `Tab` | Cycle forward through windows (most-recently-used) |
 | Hold `Cmd` + tap `Shift`+`Tab` | Cycle backward |
 
-The window list and thumbnails are snapshotted when you press Cmd, so cycling stays stable while you tap. A centered row shows all window thumbnails at once; a selection ring moves across the row as you tap Tab, and nothing is raised until you release Cmd, which raises the selected window. A fresh snapshot is taken on the next Cmd+Tab.
+The window list and thumbnails are snapshotted when you first press Tab while Cmd is held, so cycling stays stable while you keep tapping. A single Cmd+Tab switches to the next window: the first Tab snapshots windows, shows the preview row, and advances the selection to the next window in one step. Subsequent Tabs move the selection ring across the row; nothing is raised until you release Cmd, which raises the selected window. Holding Cmd without pressing Tab is a no-op. A fresh snapshot is taken on the next Cmd+Tab.
 
 ## How it works
 
 1. A system-wide `CGEventTap` intercepts `KeyDown` + `FlagsChanged` events.
 2. A pure `KeyClassifier` translates each event into a `KeyAction` (`cmdDown`, `cmdUp`, `tabForward`, `tabBackward`, `ignore`).
-3. On Cmd-down, `WindowLister` snapshots on-screen windows on the current Space via `CGWindowListCopyWindowInfo`, and `ThumbnailCapturer` captures each window's content via `CGWindowListCreateImage`.
-4. Each Tab tap advances a cursor in the frozen list and moves a selection ring across a centered row of `ThumbnailOverlay` thumbnails — no window is raised during cycling.
+3. Cmd-down is a no-op. On the first Tab while Cmd is held, `WindowLister` snapshots on-screen windows on the current Space via `CGWindowListCopyWindowInfo`, and `ThumbnailCapturer` captures each window's content via `CGWindowListCreateImage`. The session starts and the selection advances to the next window in one step.
+4. Each subsequent Tab advances a cursor in the frozen list and moves a selection ring across a centered row of `ThumbnailOverlay` thumbnails — no window is raised during cycling.
 5. On Cmd-up, `WindowRaiser` resolves the selected window's AX element by matching its `CGWindowID` via the private `_AXUIElementGetWindow` bridge (primary path), with a frame-matching fallback (1pt epsilon) for apps where the bridge errors. It raises the window via `AXUIElementPerformAction(kAXRaiseAction)`.
 
 Only Tab keydowns with Cmd held are consumed; all other keystrokes pass through untouched.

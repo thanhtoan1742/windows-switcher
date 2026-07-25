@@ -20,68 +20,100 @@ import Foundation
         return (s, raiser, previewer, capturer)
     }
 
-    @Test("beginSession captures per window, shows at index 0, no raise")
-    func beginSession() {
+    @Test("beginSession forward captures per window, shows at advanced index, no raise")
+    func beginSessionForward() {
         let (s, raiser, previewer, capturer) = makeSwitcher()
-        s.beginSession(windows: [win(1), win(2), win(3)])
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: true)
         #expect(s.snapshot.count == 3)
-        #expect(s.cursor == 0)
+        #expect(s.cursor == 1)
         #expect(s.sessionActive)
         #expect(capturer.captureOrder == [1, 2, 3])
         #expect(previewer.showCalls.count == 1)
-        #expect(previewer.showCalls[0].startingAt == 0)
+        #expect(previewer.showCalls[0].startingAt == 1)
         #expect(previewer.showCalls[0].thumbnails.count == 3)
         #expect(raiser.raised.isEmpty)
+    }
+
+    @Test("beginSession backward shows at last index")
+    func beginSessionBackward() {
+        let (s, raiser, previewer, _) = makeSwitcher()
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: false)
+        #expect(s.cursor == 2)
+        #expect(previewer.showCalls.count == 1)
+        #expect(previewer.showCalls[0].startingAt == 2)
+        #expect(raiser.raised.isEmpty)
+    }
+
+    @Test("beginSession with two windows lands on same index for forward and backward")
+    func beginSessionTwoWindows() {
+        let (s, _, previewer, _) = makeSwitcher()
+        s.beginSession(windows: [win(1), win(2)], forward: true)
+        #expect(s.cursor == 1)
+        #expect(previewer.showCalls[0].startingAt == 1)
+
+        s.endSession()
+
+        s.beginSession(windows: [win(1), win(2)], forward: false)
+        #expect(s.cursor == 1)
+        #expect(previewer.showCalls[1].startingAt == 1)
+    }
+
+    @Test("beginSession single window does not advance")
+    func beginSessionSingleWindow() {
+        let (s, _, previewer, _) = makeSwitcher()
+        s.beginSession(windows: [win(1)], forward: true)
+        #expect(s.cursor == 0)
+        #expect(previewer.showCalls[0].startingAt == 0)
     }
 
     @Test("tap forward advances cursor, updates previewer, does NOT raise")
     func tapForward() {
         let (s, raiser, previewer, _) = makeSwitcher()
-        s.beginSession(windows: [win(1), win(2), win(3)])
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: true)
         let advanced = s.tap(forward: true)
-        #expect(advanced)
-        #expect(s.cursor == 1)
-        #expect(previewer.updateCalls == [1])
-        #expect(raiser.raised.isEmpty)
-    }
-
-    @Test("tap backward wraps to end")
-    func tapBackwardWraps() {
-        let (s, raiser, previewer, _) = makeSwitcher()
-        s.beginSession(windows: [win(1), win(2), win(3)])
-        let advanced = s.tap(forward: false)
         #expect(advanced)
         #expect(s.cursor == 2)
         #expect(previewer.updateCalls == [2])
         #expect(raiser.raised.isEmpty)
     }
 
+    @Test("tap backward wraps to end")
+    func tapBackwardWraps() {
+        let (s, raiser, previewer, _) = makeSwitcher()
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: true)
+        _ = s.tap(forward: false)
+        let advanced = s.tap(forward: false)
+        #expect(advanced)
+        #expect(s.cursor == 2)
+        #expect(previewer.updateCalls == [0, 2])
+        #expect(raiser.raised.isEmpty)
+    }
+
     @Test("tap forward wraps around")
     func tapForwardWraps() {
         let (s, raiser, previewer, _) = makeSwitcher()
-        s.beginSession(windows: [win(1), win(2), win(3)])
-        _ = s.tap(forward: true)
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: true)
         _ = s.tap(forward: true)
         let advanced = s.tap(forward: true)
         #expect(advanced)
         #expect(s.cursor == 0)
-        #expect(previewer.updateCalls == [1, 2, 0])
+        #expect(previewer.updateCalls == [2, 0])
         #expect(raiser.raised.isEmpty)
     }
 
     @Test("repeated taps cycle through previewer updates, never raise")
     func repeatedTaps() {
         let (s, raiser, previewer, _) = makeSwitcher()
-        s.beginSession(windows: [win(1), win(2), win(3)])
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: true)
         for _ in 0..<6 { _ = s.tap(forward: true) }
-        #expect(previewer.updateCalls == [1, 2, 0, 1, 2, 0])
+        #expect(previewer.updateCalls == [2, 0, 1, 2, 0, 1])
         #expect(raiser.raised.isEmpty)
     }
 
     @Test("empty snapshot tap is no-op")
     func emptySnapshot() {
         let (s, raiser, previewer, _) = makeSwitcher()
-        s.beginSession(windows: [])
+        s.beginSession(windows: [], forward: true)
         let advanced = s.tap(forward: true)
         #expect(!advanced)
         #expect(previewer.updateCalls.isEmpty)
@@ -91,7 +123,7 @@ import Foundation
     @Test("single window tap is no-op")
     func singleWindow() {
         let (s, raiser, previewer, _) = makeSwitcher()
-        s.beginSession(windows: [win(1)])
+        s.beginSession(windows: [win(1)], forward: true)
         let advanced = s.tap(forward: true)
         #expect(!advanced)
         #expect(previewer.updateCalls.isEmpty)
@@ -110,13 +142,13 @@ import Foundation
     @Test("endSession hides previewer and raises selected window once")
     func endSessionRaises() {
         let (s, raiser, previewer, _) = makeSwitcher()
-        s.beginSession(windows: [win(1), win(2), win(3)])
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: true)
         _ = s.tap(forward: true)
         s.endSession()
         #expect(!s.sessionActive)
         #expect(previewer.hideCallCount == 1)
         #expect(raiser.raised.count == 1)
-        #expect(raiser.raised[0].windowID == 2)
+        #expect(raiser.raised[0].windowID == 3)
     }
 
     @Test("endSession without begin is no-op")
@@ -130,7 +162,7 @@ import Foundation
     @Test("endSession disables further taps")
     func endSessionDisablesTaps() {
         let (s, raiser, previewer, _) = makeSwitcher()
-        s.beginSession(windows: [win(1), win(2)])
+        s.beginSession(windows: [win(1), win(2)], forward: true)
         s.endSession()
         let advanced = s.tap(forward: true)
         #expect(!advanced)
@@ -141,18 +173,18 @@ import Foundation
     @Test("new beginSession re-snapshots and re-captures")
     func reSnapshot() {
         let (s, raiser, previewer, capturer) = makeSwitcher()
-        s.beginSession(windows: [win(1), win(2)])
+        s.beginSession(windows: [win(1), win(2)], forward: true)
         _ = s.tap(forward: true)
         s.endSession()
-        s.beginSession(windows: [win(5), win(6), win(7)])
+        s.beginSession(windows: [win(5), win(6), win(7)], forward: true)
         #expect(s.snapshot.count == 3)
-        #expect(s.cursor == 0)
+        #expect(s.cursor == 1)
         #expect(capturer.captureOrder == [1, 2, 5, 6, 7])
         #expect(previewer.showCalls.count == 2)
-        #expect(previewer.showCalls[1].startingAt == 0)
+        #expect(previewer.showCalls[1].startingAt == 1)
         _ = s.tap(forward: true)
         s.endSession()
-        #expect(raiser.raised.last?.windowID == 6)
+        #expect(raiser.raised.last?.windowID == 7)
     }
 
     @Test("all-nil capture: no show, no raise on end")
@@ -162,7 +194,7 @@ import Foundation
         let raiser = MockRaiser()
         let previewer = MockPreviewer()
         let s = Switcher(raiser: raiser, previewer: previewer, capturer: capturer)
-        s.beginSession(windows: [win(1), win(2), win(3)])
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: true)
         #expect(s.snapshot.isEmpty)
         #expect(previewer.showCalls.isEmpty)
         s.endSession()
@@ -179,18 +211,19 @@ import Foundation
         let raiser = MockRaiser()
         let previewer = MockPreviewer()
         let s = Switcher(raiser: raiser, previewer: previewer, capturer: capturer)
-        s.beginSession(windows: [win(1), win(2), win(3)])
+        s.beginSession(windows: [win(1), win(2), win(3)], forward: true)
         #expect(s.snapshot.count == 2)
         #expect(s.snapshot.map { $0.windowID } == [1, 3])
         #expect(previewer.showCalls.count == 1)
         #expect(previewer.showCalls[0].thumbnails.count == 2)
+        #expect(s.cursor == 1)  // advanced within the filtered 2-window snapshot
         // cycling stays within the filtered snapshot
         _ = s.tap(forward: true)
-        #expect(s.cursor == 1)
-        #expect(previewer.updateCalls == [1])
+        #expect(s.cursor == 0)
+        #expect(previewer.updateCalls == [0])
         s.endSession()
         #expect(raiser.raised.count == 1)
-        #expect(raiser.raised[0].windowID == 3)
+        #expect(raiser.raised[0].windowID == 1)
     }
 }
 

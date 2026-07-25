@@ -60,13 +60,21 @@ import WindowsSwitcherCore
     private func handle(_ action: KeyAction) {
         switch action {
         case .cmdDown:
-            switcher.beginSession(windows: WindowLister.currentSpaceWindows())
+            break  // Session starts on the first Tab, not on Cmd-down.
         case .cmdUp:
             switcher.endSession()
         case .tabForward:
-            switcher.tap(forward: true)
+            if switcher.sessionActive {
+                switcher.tap(forward: true)
+            } else {
+                switcher.beginSession(windows: WindowLister.currentSpaceWindows(), forward: true)
+            }
         case .tabBackward:
-            switcher.tap(forward: false)
+            if switcher.sessionActive {
+                switcher.tap(forward: false)
+            } else {
+                switcher.beginSession(windows: WindowLister.currentSpaceWindows(), forward: false)
+            }
         case .ignore:
             break
         }
