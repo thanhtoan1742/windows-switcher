@@ -3,7 +3,7 @@
 A minimal macOS app that replaces the default Cmd+Tab app-switcher with Windows/Linux-style **window** switching: cycling across every open window regardless of which app owns it, on the current Space.
 
 - **Native Swift + AppKit** — no third-party dependencies
-- **Background app** (`LSUIElement`) — menubar dot, no Dock icon
+- **Background app** (`LSUIElement`) — menubar icon, no Dock icon
 - **Preview overlay** — all window thumbnails shown at once in a centered row; a selection ring moves as you cycle, and nothing is raised until you release Cmd
 - **Lazy session** — holding Cmd alone does nothing; the session (snapshot + preview) starts on the first Tab
 - **Small footprint** — no caching, no timers; idle between taps
@@ -39,7 +39,7 @@ On first launch:
 4. Open **System Settings → Privacy & Security → Screen Recording** and enable *Windows Switcher*.
 5. The badge disappears and Cmd+Tab now cycles windows with a preview overlay.
 
-To quit: click the menubar dot → *Quit*.
+To quit: click the menubar icon → *Quit*.
 
 ## Usage
 
@@ -83,7 +83,7 @@ Tests/
 - **Current Space only** — windows on other Spaces are not included. Cross-Space support is isolated in `WindowLister.currentSpaceWindows()`.
 - **Minimized windows excluded** — unminimizing is slow without a preview overlay.
 - **Private AX API for window identity** — AX does not expose the `CGWindowID` publicly, so windows are matched via the private `_AXUIElementGetWindow` bridge (macOS 10.10+, used by AltTab, DockDoor, Loop). A frame-matching fallback (1pt epsilon) covers apps where the bridge errors but cannot distinguish two same-app windows with identical frames.
-- **Screen Recording permission required** — without it, window thumbnails are blank (the session still runs and raises a window on Cmd-up, but previews are empty); the menubar dot shows amber.
+- **Screen Recording permission required** — without it, window thumbnails are blank (the session still runs and raises a window on Cmd-up, but previews are empty); the menubar badge shows amber.
 - **No autostart** — add it as a Login Item or LaunchAgent yourself.
 
 ## License
