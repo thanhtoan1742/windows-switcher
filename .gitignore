@@ -2,3 +2,4 @@
 .swiftpm/
 *.xcodeproj/
 WindowsSwitcher.app/
+.DS_Store
