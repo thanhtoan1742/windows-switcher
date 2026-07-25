@@ -4,8 +4,8 @@ A minimal macOS app that replaces the default Cmd+Tab app-switcher with Windows/
 
 - **Native Swift + AppKit** — no third-party dependencies
 - **Background app** (`LSUIElement`) — menubar dot, no Dock icon
-- **Instant switching** — no overlay; each Tab tap raises a window live
-- **Small footprint** — no caching, no timers, no thumbnails; idle between taps
+- **Preview overlay** — a centered thumbnail of the selected window; nothing is raised until you release Cmd
+- **Small footprint** — no caching, no timers; idle between taps
 
 ## Requirements
 
