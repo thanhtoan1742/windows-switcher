@@ -15,14 +15,18 @@ public protocol WindowPreviewing: AnyObject {
     func hide()
 }
 
-public final class Switcher {
+@MainActor public final class Switcher {
     private let raiser: WindowRaising
     private let previewer: WindowPreviewing
     private let capturer: ThumbnailCapturing
     private(set) var snapshot: [WindowInfo] = []
-    private(set) var thumbnails: [CGImage] = []
     private(set) var cursor: Int = 0
-    private(set) var isCmdDown: Bool = false
+    /// True after `beginSession` is called, regardless of capture success.
+    /// Cleared on `endSession`. Gates `tap` and the deferred raise so a stray
+    /// Cmd-up with no prior Cmd-down is a no-op. Note: remains true even when
+    /// all captures return nil (strict-mode silent no-op session) so that
+    /// `endSession` still calls `previewer.hide()` for symmetry.
+    private(set) var sessionActive: Bool = false
 
     public init(raiser: WindowRaising, previewer: WindowPreviewing, capturer: ThumbnailCapturing) {
         self.raiser = raiser
@@ -39,9 +43,8 @@ public final class Switcher {
             return ($0, img)
         }
         snapshot = pairs.map { $0.0 }
-        thumbnails = pairs.map { $0.1 }
         cursor = 0
-        isCmdDown = true
+        sessionActive = true
         guard !pairs.isEmpty else { return }
         previewer.show(thumbnails: pairs, startingAt: 0)
     }
@@ -51,7 +54,7 @@ public final class Switcher {
     /// cursor advanced; false if the session was inactive or had <2 windows.
     @discardableResult
     public func tap(forward: Bool) -> Bool {
-        guard isCmdDown, snapshot.count >= 2 else { return false }
+        guard sessionActive, snapshot.count >= 2 else { return false }
         cursor = forward
             ? (cursor + 1) % snapshot.count
             : (cursor - 1 + snapshot.count) % snapshot.count
@@ -60,10 +63,10 @@ public final class Switcher {
     }
 
     /// Called on Cmd-up. Hides the overlay and raises the selected window once.
-    /// Guards `isCmdDown` so a stray Cmd-up with no prior Cmd-down is a no-op.
+    /// Guards `sessionActive` so a stray Cmd-up with no prior Cmd-down is a no-op.
     public func endSession() {
-        guard isCmdDown else { return }
-        isCmdDown = false
+        guard sessionActive else { return }
+        sessionActive = false
         previewer.hide()
         guard snapshot.indices.contains(cursor) else { return }
         raiser.raise(snapshot[cursor])
