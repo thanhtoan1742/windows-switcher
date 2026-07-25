@@ -63,7 +63,6 @@ final class ThumbnailOverlay: WindowPreviewing {
         panel.orderOut(nil)
         tearDownCells()
         pairs = []
-        selectedIndex = 0
     }
 
     // MARK: - Cell sizing
@@ -87,6 +86,7 @@ final class ThumbnailOverlay: WindowPreviewing {
             let cell = NSImageView()
             cell.imageScaling = .scaleProportionallyDown
             cell.imageAlignment = .alignCenter
+            cell.layer = CALayer()
             cell.wantsLayer = true
             cell.layer?.cornerRadius = ThumbnailOverlay.cornerRadius
             cell.layer?.masksToBounds = true
