@@ -7,13 +7,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var eventTap: EventTap!
     private var switcher: Switcher!
     private var raiser: WindowRaiser!
+    private var capturer: ThumbnailCapturer!
+    private var previewer: ThumbnailOverlay!
     private var tapStarted: Bool = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         raiser = WindowRaiser()
-        switcher = Switcher(raiser: raiser)
+        capturer = ThumbnailCapturer()
+        previewer = ThumbnailOverlay()
+        switcher = Switcher(raiser: raiser, previewer: previewer, capturer: capturer)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = statusIcon(trusted: AXIsProcessTrusted())
+        statusItem.button?.image = statusIcon()
         buildMenu()
 
         eventTap = EventTap { [weak self] action in
@@ -28,28 +32,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = AXIsProcessTrustedWithOptions(
             [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         )
+        _ = CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess()
     }
 
     private func tryStartTap() {
         guard AXIsProcessTrusted() else {
             tapStarted = false
-            statusItem.button?.image = statusIcon(trusted: false)
+            statusItem.button?.image = statusIcon()
             buildMenu()
             return
         }
         do {
             try eventTap.start()
             tapStarted = true
-            statusItem.button?.image = statusIcon(trusted: true)
         } catch {
             tapStarted = false
-            statusItem.button?.image = statusIcon(trusted: false)
         }
+        statusItem.button?.image = statusIcon()
         buildMenu()
     }
 
     @objc private func appActivated() {
         if !tapStarted { tryStartTap() }
+        statusItem.button?.image = statusIcon()
     }
 
     private func handle(_ action: KeyAction) {
@@ -67,9 +72,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func statusIcon(trusted: Bool) -> NSImage {
+    private func statusIcon() -> NSImage {
+        let trusted = AXIsProcessTrusted()
+        let screenRecordingOk = CGPreflightScreenCaptureAccess()
+        let color: NSColor
+        if !trusted { color = .systemRed }
+        else if !screenRecordingOk { color = .systemOrange }
+        else { color = .systemGreen }
         let image = NSImage(size: NSSize(width: 14, height: 14), flipped: false) { rect in
-            (trusted ? NSColor.systemGreen : NSColor.systemRed).setFill()
+            color.setFill()
             NSBezierPath(ovalIn: rect.insetBy(dx: 2.5, dy: 2.5)).fill()
             return true
         }
@@ -79,9 +90,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func buildMenu() {
         let menu = NSMenu()
-        let title = AXIsProcessTrusted()
-            ? "Windows Switcher: Active"
-            : "Windows Switcher: Needs Accessibility Permission"
+        let trusted = AXIsProcessTrusted()
+        let screenRecordingOk = CGPreflightScreenCaptureAccess()
+        let title: String
+        if !trusted {
+            title = "Windows Switcher: Needs Accessibility Permission"
+        } else if !screenRecordingOk {
+            title = "Windows Switcher: Needs Screen Recording Permission"
+        } else {
+            title = "Windows Switcher: Active"
+        }
         menu.addItem(withTitle: title, action: nil, keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
