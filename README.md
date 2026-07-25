@@ -80,7 +80,7 @@ Tests/
 - **Current Space only** — windows on other Spaces are not included. Cross-Space support is isolated in `WindowLister.currentSpaceWindows()`.
 - **Minimized windows excluded** — unminimizing is slow without a preview overlay.
 - **Private AX API for window identity** — AX does not expose the `CGWindowID` publicly, so windows are matched via the private `_AXUIElementGetWindow` bridge (macOS 10.10+, used by AltTab, DockDoor, Loop). A frame-matching fallback (1pt epsilon) covers apps where the bridge errors but cannot distinguish two same-app windows with identical frames.
-- **Screen Recording permission required** — without it, window thumbnails are blank and the session is a silent no-op (the menubar dot shows amber).
+- **Screen Recording permission required** — without it, window thumbnails are blank (the session still runs and raises a window on Cmd-up, but previews are empty); the menubar dot shows amber.
 - **No autostart** — add it as a Login Item or LaunchAgent yourself.
 
 ## License
