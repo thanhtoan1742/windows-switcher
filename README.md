@@ -33,11 +33,11 @@ open WindowsSwitcher.app
 > **Note:** `make-app.sh` does not code-sign the bundle. On first launch macOS Gatekeeper will warn that the app is from an unidentified developer. To bypass: right-click `WindowsSwitcher.app` → **Open** → **Open**, or run `xattr -d com.apple.quarantine /path/to/WindowsSwitcher.app` before opening.
 
 On first launch:
-1. A **red dot** appears in the menubar — the app needs Accessibility permission.
+1. The Windows Switcher icon appears in the menubar with a **red badge** — the app needs Accessibility permission.
 2. Open **System Settings → Privacy & Security → Accessibility** and enable *Windows Switcher*.
-3. The dot turns **amber** — the app now needs Screen Recording permission (for window thumbnails).
+3. The badge turns **amber** — the app now needs Screen Recording permission (for window thumbnails).
 4. Open **System Settings → Privacy & Security → Screen Recording** and enable *Windows Switcher*.
-5. The dot turns **green** and Cmd+Tab now cycles windows with a preview overlay.
+5. The badge disappears and Cmd+Tab now cycles windows with a preview overlay.
 
 To quit: click the menubar dot → *Quit*.
 
