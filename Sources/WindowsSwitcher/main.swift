@@ -19,6 +19,11 @@ import WindowsSwitcherCore
         switcher = Switcher(raiser: raiser, previewer: previewer, capturer: capturer)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refreshStatusIcon()
+        appearanceObserver = NSApp.observe(\.effectiveAppearance, options: [.new]) { [weak self] _, _ in
+            MainActor.assumeIsolated {
+                self?.refreshStatusIcon()
+            }
+        }
         buildMenu()
 
         eventTap = EventTap { [weak self] action in
