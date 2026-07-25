@@ -12,12 +12,6 @@ final class ThumbnailOverlay: WindowPreviewing {
     private var imageViews: [NSImageView] = []
     private var selectedIndex: Int = 0
 
-    private static let margin: CGFloat = 40
-    private static let spacing: CGFloat = 8
-    private static let maxCell = CGSize(width: 240, height: 180)
-    // Reference only; not enforced (shrink-to-fit drops the floor to avoid overflow).
-    private static let minCell = CGSize(width: 80, height: 60)
-    private static let aspect = maxCell.height / maxCell.width   // 0.75 (4:3)
     private static let borderWidth: CGFloat = 3
     private static let cornerRadius: CGFloat = 6
 
@@ -70,14 +64,7 @@ final class ThumbnailOverlay: WindowPreviewing {
     // MARK: - Cell sizing
 
     private func computeCellSize(count: Int, screen: NSScreen) -> CGSize {
-        let availWidth = screen.visibleFrame.width - 2 * ThumbnailOverlay.margin
-        let naturalWidth = (availWidth - CGFloat(count - 1) * ThumbnailOverlay.spacing) / CGFloat(count)
-        // Shrink-to-fit with no floor: when too many windows would overflow
-        // the screen at minCell.width (80pt), cells shrink below 80pt rather
-        // than extending off-screen. Trades legibility for guaranteed visibility.
-        let cellWidth = min(ThumbnailOverlay.maxCell.width, naturalWidth)
-        let cellHeight = cellWidth * ThumbnailOverlay.aspect
-        return CGSize(width: cellWidth, height: cellHeight)
+        RowLayout.cellSize(count: count, availableWidth: screen.visibleFrame.width)
     }
 
     // MARK: - Cell building
@@ -97,7 +84,7 @@ final class ThumbnailOverlay: WindowPreviewing {
     }
 
     private func layoutRow(cellSize: CGSize) {
-        let stride = cellSize.width + ThumbnailOverlay.spacing
+        let stride = cellSize.width + RowLayout.defaultSpacing
         for (i, cell) in imageViews.enumerated() {
             let origin = CGPoint(x: CGFloat(i) * stride, y: 0)
             cell.frame = CGRect(origin: origin, size: cellSize)
@@ -105,14 +92,10 @@ final class ThumbnailOverlay: WindowPreviewing {
     }
 
     private func sizeAndCenterPanel(cellSize: CGSize, screen: NSScreen) {
-        let n = imageViews.count
-        let rowWidth = CGFloat(n) * cellSize.width + CGFloat(n - 1) * ThumbnailOverlay.spacing
-        let rowHeight = cellSize.height
-        panel.setContentSize(CGSize(width: rowWidth, height: rowHeight))
-        let frame = screen.visibleFrame
-        let x = frame.midX - rowWidth / 2
-        let y = frame.midY - rowHeight / 2
-        panel.setFrameOrigin(CGPoint(x: x, y: y))
+        let row = RowLayout.rowSize(cellSize: cellSize, count: imageViews.count)
+        panel.setContentSize(row)
+        let o = RowLayout.origin(rowSize: row, screenFrame: screen.visibleFrame)
+        panel.setFrameOrigin(o)
     }
 
     private func applyImages() {
