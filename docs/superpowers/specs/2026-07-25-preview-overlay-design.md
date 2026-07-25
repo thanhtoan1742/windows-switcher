@@ -246,7 +246,7 @@ Two permissions are now required, both prompted at launch:
    → Screen Recording). Both calls are non-blocking and return immediately if
    already granted.
 
-Menubar dot gains a third state:
+Menubar dot gains a third state (note: the menubar-dot description here is **superseded by `2026-07-25-menubar-icon-design.md`** — the icon is now an SF Symbol with a warning-only corner badge, no green state):
 
 | State | Accessibility | Screen Recording | Dot color |
 |-------|---------------|------------------|-----------|

@@ -63,7 +63,7 @@ When a menu is open, the status button gets a blue background; a non-template im
 
 ### Appearance refresh
 
-Register a block-based KVO observer on `NSApp.effectiveAppearance` in `applicationDidFinishLaunching`; store the observation token and invalidate it in `dealloc`. On change, re-run the existing `statusItem.button?.image = statusImages().primary` refresh path (also setting `alternateImage`). No timers, no event-tap coupling.
+Register a block-based KVO observer on `NSApp.effectiveAppearance` in `applicationDidFinishLaunching`; store the observation token as a stored property (`appearanceObserver`). The block-based `NSKeyValueObservation` self-invalidates when the token is released (on `AppDelegate` deinit) — no explicit `removeObserver` or `dealloc` override is needed. On change, re-run the existing `statusItem.button?.image = statusImages().primary` refresh path (also setting `alternateImage`). No timers, no event-tap coupling.
 
 ### Refresh sites (unchanged triggers)
 
@@ -98,5 +98,5 @@ No new `Tests/` files.
 ## Risks
 
 - `NSImage(systemSymbolName:accessibilityDescription:)` requires macOS 11+. Project targets macOS 12+ (Info.plist `LSMinimumSystemVersion = 12.0`), so safe.
-- KVO on `NSApp.effectiveAppearance` is the standard mechanism; use a block-based observer whose token is invalidated in `dealloc` to avoid a dangling observer.
+- KVO on `NSApp.effectiveAppearance` is the standard mechanism; the block-based `NSKeyValueObservation` self-invalidates on release of the stored token (no explicit `removeObserver`/`dealloc`), avoiding a dangling observer.
 - Non-template images don't get the menu-open highlight automatically; mitigated by `alternateImage`.

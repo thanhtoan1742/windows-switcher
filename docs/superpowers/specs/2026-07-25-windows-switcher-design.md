@@ -95,7 +95,7 @@ current-Space scope).
 
 - On launch: `AXIsProcessTrusted(options: [.prompt])` opens System Settings →
   Accessibility.
-- Menubar icon: green dot when trusted + tap active, red dot otherwise.
+- Menubar icon: green dot when trusted + tap active, red dot otherwise. **Superseded by `2026-07-25-menubar-icon-design.md`** — the icon is now an SF Symbol with a warning-only corner badge (no green state).
 - Menu: a status line + Quit. No preferences window.
 
 ## Performance / Footprint

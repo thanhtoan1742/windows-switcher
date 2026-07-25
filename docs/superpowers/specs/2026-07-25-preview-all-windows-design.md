@@ -243,8 +243,10 @@ Manual verification covers:
   cursor stay aligned within the filtered set.
 - **AX raise fails at Cmd-up**: silently move on (same as today).
 - **Screen Recording revoked mid-run**: thumbnails render blank; the row
-  still shows and the ring still moves; amber dot updates on the next
-  app-activation re-check. Documented limitation (unchanged).
+  still shows and the ring still moves; amber badge updates on the next
+  app-activation re-check. Documented limitation (unchanged). (Menubar-badge
+  wording is described in `2026-07-25-menubar-icon-design.md`, which supersedes
+  the earlier "dot" phrasing.)
 
 ## Migration Note
 
