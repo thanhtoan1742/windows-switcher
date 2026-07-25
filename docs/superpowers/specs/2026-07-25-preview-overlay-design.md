@@ -1,7 +1,7 @@
 # Windows Switcher — Preview Overlay Design
 
 Date: 2026-07-25
-Status: Draft
+Status: Draft (partially superseded by `2026-07-25-preview-all-windows-design.md` — the ThumbnailOverlay section's single-thumbnail rendering was replaced by a row of all thumbnails. All other sections remain in force.)
 Supersedes (in part): `2026-07-25-windows-switcher-design.md` sections
 "User Interaction", "Cycling State Machine", "Permissions + UI", "Performance /
 Footprint", and "Testing" — the decoupled-preview behavior described here
@@ -24,7 +24,9 @@ thumbnail capture fails for every window, the session is a silent no-op
 ## Non-Goals (explicit)
 
 - **No thumbnail row / app-icon strip.** A single centered thumbnail only, not
-  a native-Cmd+Tab-style row.
+  a native-Cmd+Tab-style row. **(Superseded — see
+  `2026-07-25-preview-all-windows-design.md` for the row overlay that replaced
+  this design.)**
 - **No re-capture on tap.** Thumbnails are frozen for the session; refresh on
   next Cmd-down.
 - **No decoupled "peek" mode** beyond the existing session. Preview and raise
