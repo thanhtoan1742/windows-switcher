@@ -5,6 +5,16 @@ public protocol WindowRaising: AnyObject {
     func raise(_ window: WindowInfo) -> Bool
 }
 
+public protocol ThumbnailCapturing: AnyObject {
+    func capture(_ window: WindowInfo) -> CGImage?
+}
+
+public protocol WindowPreviewing: AnyObject {
+    func show(thumbnails: [(WindowInfo, CGImage)], startingAt index: Int)
+    func update(index: Int)
+    func hide()
+}
+
 /// Cycling state machine for window switching. Pure: raises are delegated to a
 /// `WindowRaising` instance so this class is fully unit-testable with a mock.
 public final class Switcher {
