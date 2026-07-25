@@ -10,6 +10,7 @@ import WindowsSwitcherCore
     private var capturer: ThumbnailCapturer!
     private var previewer: ThumbnailOverlay!
     private var tapStarted: Bool = false
+    private var appearanceObserver: NSKeyValueObservation?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         raiser = WindowRaiser()
@@ -17,7 +18,7 @@ import WindowsSwitcherCore
         previewer = ThumbnailOverlay()
         switcher = Switcher(raiser: raiser, previewer: previewer, capturer: capturer)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = statusIcon()
+        refreshStatusIcon()
         buildMenu()
 
         eventTap = EventTap { [weak self] action in
@@ -38,7 +39,7 @@ import WindowsSwitcherCore
     private func tryStartTap() {
         guard AXIsProcessTrusted() else {
             tapStarted = false
-            statusItem.button?.image = statusIcon()
+            refreshStatusIcon()
             buildMenu()
             return
         }
@@ -48,13 +49,13 @@ import WindowsSwitcherCore
         } catch {
             tapStarted = false
         }
-        statusItem.button?.image = statusIcon()
+        refreshStatusIcon()
         buildMenu()
     }
 
     @objc private func appActivated() {
         if !tapStarted { tryStartTap() }
-        statusItem.button?.image = statusIcon()
+        refreshStatusIcon()
     }
 
     private func handle(_ action: KeyAction) {
@@ -80,20 +81,67 @@ import WindowsSwitcherCore
         }
     }
 
-    private func statusIcon() -> NSImage {
+    private struct StatusImages {
+        let primary: NSImage
+        let alternate: NSImage
+    }
+
+    private func statusImages() -> StatusImages {
         let trusted = AXIsProcessTrusted()
         let screenRecordingOk = CGPreflightScreenCaptureAccess()
-        let color: NSColor
-        if !trusted { color = .systemRed }
-        else if !screenRecordingOk { color = .systemOrange }
-        else { color = .systemGreen }
-        let image = NSImage(size: NSSize(width: 14, height: 14), flipped: false) { rect in
-            color.setFill()
-            NSBezierPath(ovalIn: rect.insetBy(dx: 2.5, dy: 2.5)).fill()
-            return true
+        let badgeColor: NSColor?
+        if !trusted { badgeColor = .systemRed }
+        else if !screenRecordingOk { badgeColor = .systemOrange }
+        else { badgeColor = nil }
+
+        let symbol = NSImage(
+            systemSymbolName: "arrow.right.arrow.left.square",
+            accessibilityDescription: "Windows Switcher"
+        )!
+        let canvasSize = NSSize(width: 18, height: 18)
+        let symbolSize = NSSize(width: 14, height: 14)
+        let badgeRadius: CGFloat = 3.0
+        let badgeInset: CGFloat = 1.5
+
+        func compose(symbolTint: NSColor) -> NSImage {
+            let image = NSImage(size: canvasSize, flipped: false) { rect in
+                let symbolRect = NSRect(
+                    x: (canvasSize.width - symbolSize.width) / 2,
+                    y: (canvasSize.height - symbolSize.height) / 2,
+                    width: symbolSize.width,
+                    height: symbolSize.height
+                )
+                let tinted = symbol.tinted(symbolTint)
+                tinted.draw(in: symbolRect,
+                            from: .zero,
+                            operation: .sourceOver,
+                            fraction: 1.0)
+                if let badgeColor {
+                    let badgeRect = NSRect(
+                        x: rect.maxX - badgeInset - badgeRadius * 2,
+                        y: rect.maxY - badgeInset - badgeRadius * 2,
+                        width: badgeRadius * 2,
+                        height: badgeRadius * 2
+                    )
+                    badgeColor.setFill()
+                    NSBezierPath(ovalIn: badgeRect).fill()
+                }
+                return true
+            }
+            image.isTemplate = false
+            return image
         }
-        image.isTemplate = false
-        return image
+
+        return StatusImages(
+            primary: compose(symbolTint: .controlTextColor),
+            alternate: compose(symbolTint: .white)
+        )
+    }
+
+    private func refreshStatusIcon() {
+        let images = statusImages()
+        statusItem.button?.image = images.primary
+        statusItem.button?.alternateImage = images.alternate
     }
 
     private func buildMenu() {
@@ -121,4 +169,17 @@ MainActor.assumeIsolated {
     app.delegate = delegate
     app.setActivationPolicy(.accessory)
     app.run()
+}
+
+private extension NSImage {
+    func tinted(_ color: NSColor) -> NSImage {
+        let tinted = NSImage(size: size, flipped: false) { rect in
+            self.draw(in: rect)
+            color.set()
+            rect.fill(using: .sourceAtop)
+            return true
+        }
+        tinted.isTemplate = false
+        return tinted
+    }
 }
