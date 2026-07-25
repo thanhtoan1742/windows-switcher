@@ -119,7 +119,7 @@ import WindowsSwitcherCore
                 if let badgeColor {
                     let badgeRect = NSRect(
                         x: rect.maxX - badgeInset - badgeRadius * 2,
-                        y: rect.maxY - badgeInset - badgeRadius * 2,
+                        y: rect.minY + badgeInset,
                         width: badgeRadius * 2,
                         height: badgeRadius * 2
                     )
@@ -175,7 +175,7 @@ private extension NSImage {
     func tinted(_ color: NSColor) -> NSImage {
         let tinted = NSImage(size: size, flipped: false) { rect in
             self.draw(in: rect)
-            color.set()
+            color.setFill()
             rect.fill(using: .sourceAtop)
             return true
         }
