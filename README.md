@@ -76,7 +76,7 @@ Tests/
 
 - **Current Space only** — windows on other Spaces are not included. Cross-Space support is isolated in `WindowLister.currentSpaceWindows()`.
 - **Minimized windows excluded** — unminimizing is slow without a preview overlay.
-- **Window matching by frame** — AX does not expose the `CGWindowID`, so windows are matched by position + size (1pt epsilon). Two windows of the same app with identical frames can't be distinguished.
+- **Private AX API for window identity** — AX does not expose the `CGWindowID` publicly, so windows are matched via the private `_AXUIElementGetWindow` bridge (macOS 10.10+, used by AltTab, DockDoor, Loop). A frame-matching fallback (1pt epsilon) covers apps where the bridge errors but cannot distinguish two same-app windows with identical frames.
 - **No autostart** — add it as a Login Item or LaunchAgent yourself.
 
 ## License

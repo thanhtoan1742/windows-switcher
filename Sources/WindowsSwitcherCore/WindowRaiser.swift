@@ -2,6 +2,13 @@ import ApplicationServices
 import Cocoa
 import CoreGraphics
 
+/// Private Accessibility API: maps an AX window element to its CGWindowID. macOS
+/// 10.10+; no public equivalent. Frame matching is the only public-API alternative
+/// and fails for same-app windows sharing a frame (e.g. two maximized windows).
+@_silgen_name("_AXUIElementGetWindow") @discardableResult
+fileprivate func _AXUIElementGetWindow(_ element: AXUIElement,
+                                       _ windowID: UnsafeMutablePointer<CGWindowID>) -> AXError
+
 /// Raises a cross-app window via the Accessibility API. Conforms to `WindowRaising`
 /// so the `Switcher` can stay pure and unit-testable.
 public final class WindowRaiser: WindowRaising {
@@ -19,16 +26,26 @@ public final class WindowRaiser: WindowRaising {
             return false
         }
         for ax in axWindows {
+            var wid: CGWindowID = 0
+            if _AXUIElementGetWindow(ax, &wid) == .success, wid == window.windowID {
+                return raiseAX(ax, pid: window.ownerPID)
+            }
+        }
+        for ax in axWindows {
             guard let frame = axFrame(ax) else { continue }
             guard WindowRaiser.framesMatch(frame, window.bounds) else { continue }
-            AXUIElementPerformAction(ax, kAXRaiseAction as CFString)
-            AXUIElementSetAttributeValue(ax, kAXMainAttribute as CFString, kCFBooleanTrue)
-            if let running = NSRunningApplication(processIdentifier: window.ownerPID) {
-                running.activate()
-            }
-            return true
+            return raiseAX(ax, pid: window.ownerPID)
         }
         return false
+    }
+
+    private func raiseAX(_ ax: AXUIElement, pid: pid_t) -> Bool {
+        AXUIElementPerformAction(ax, kAXRaiseAction as CFString)
+        AXUIElementSetAttributeValue(ax, kAXMainAttribute as CFString, kCFBooleanTrue)
+        if let running = NSRunningApplication(processIdentifier: pid) {
+            running.activate()
+        }
+        return true
     }
 
     private func axFrame(_ ax: AXUIElement) -> CGRect? {
@@ -48,8 +65,8 @@ public final class WindowRaiser: WindowRaising {
         return CGRect(origin: origin, size: size)
     }
 
-    /// Pure helper: AX does not expose the CGWindowID, so we match an AX window to a
-    /// CGWindowList entry by frame. Tolerant of sub-pixel rounding (1pt epsilon).
+    /// Pure helper used by the frame-matching fallback. Tolerant of sub-pixel
+    /// rounding (1pt epsilon).
     static func framesMatch(_ a: CGRect, _ b: CGRect, epsilon: CGFloat = 1) -> Bool {
         abs(a.origin.x - b.origin.x) < epsilon &&
         abs(a.origin.y - b.origin.y) < epsilon &&
