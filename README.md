@@ -4,7 +4,7 @@ A minimal macOS app that replaces the default Cmd+Tab app-switcher with Windows/
 
 - **Native Swift + AppKit** — no third-party dependencies
 - **Background app** (`LSUIElement`) — menubar dot, no Dock icon
-- **Preview overlay** — a centered thumbnail of the selected window; nothing is raised until you release Cmd
+- **Preview overlay** — all window thumbnails shown at once in a centered row; a selection ring moves as you cycle, and nothing is raised until you release Cmd
 - **Small footprint** — no caching, no timers; idle between taps
 
 ## Requirements
@@ -45,14 +45,14 @@ To quit: click the menubar dot → *Quit*.
 | Hold `Cmd` + tap `Tab` | Cycle forward through windows (most-recently-used) |
 | Hold `Cmd` + tap `Shift`+`Tab` | Cycle backward |
 
-The window list and thumbnails are snapshotted when you press Cmd, so cycling stays stable while you tap. A centered preview shows the thumbnail of the currently selected window; nothing is raised until you release Cmd, which raises the selected window. A fresh snapshot is taken on the next Cmd+Tab.
+The window list and thumbnails are snapshotted when you press Cmd, so cycling stays stable while you tap. A centered row shows all window thumbnails at once; a selection ring moves across the row as you tap Tab, and nothing is raised until you release Cmd, which raises the selected window. A fresh snapshot is taken on the next Cmd+Tab.
 
 ## How it works
 
 1. A system-wide `CGEventTap` intercepts `KeyDown` + `FlagsChanged` events.
 2. A pure `KeyClassifier` translates each event into a `KeyAction` (`cmdDown`, `cmdUp`, `tabForward`, `tabBackward`, `ignore`).
 3. On Cmd-down, `WindowLister` snapshots on-screen windows on the current Space via `CGWindowListCopyWindowInfo`, and `ThumbnailCapturer` captures each window's content via `CGWindowListCreateImage`.
-4. Each Tab tap advances a cursor in the frozen list and updates a centered `ThumbnailOverlay` — no window is raised during cycling.
+4. Each Tab tap advances a cursor in the frozen list and moves a selection ring across a centered row of `ThumbnailOverlay` thumbnails — no window is raised during cycling.
 5. On Cmd-up, `WindowRaiser` resolves the selected window's AX element by matching its frame and raises it via `AXUIElementPerformAction(kAXRaiseAction)`.
 
 Only Tab keydowns with Cmd held are consumed; all other keystrokes pass through untouched.
