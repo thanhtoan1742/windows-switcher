@@ -12,6 +12,7 @@ A minimal macOS app that replaces the default Cmd+Tab app-switcher with Windows/
 - macOS 12+
 - Swift 5.9+ (builds with just Command Line Tools — no Xcode needed)
 - **Accessibility permission** (the app prompts on first launch)
+- **Screen Recording permission** (the app prompts on first launch; needed for window thumbnails)
 
 ## Build
 
@@ -31,7 +32,9 @@ open WindowsSwitcher.app
 On first launch:
 1. A **red dot** appears in the menubar — the app needs Accessibility permission.
 2. Open **System Settings → Privacy & Security → Accessibility** and enable *Windows Switcher*.
-3. The dot turns **green** and Cmd+Tab now cycles windows.
+3. The dot turns **amber** — the app now needs Screen Recording permission (for window thumbnails).
+4. Open **System Settings → Privacy & Security → Screen Recording** and enable *Windows Switcher*.
+5. The dot turns **green** and Cmd+Tab now cycles windows with a preview overlay.
 
 To quit: click the menubar dot → *Quit*.
 
@@ -42,15 +45,15 @@ To quit: click the menubar dot → *Quit*.
 | Hold `Cmd` + tap `Tab` | Cycle forward through windows (most-recently-used) |
 | Hold `Cmd` + tap `Shift`+`Tab` | Cycle backward |
 
-The window list is snapshotted when you press Cmd, so cycling stays stable while you tap. Release Cmd to end the session; a fresh list is taken on the next Cmd+Tab.
+The window list and thumbnails are snapshotted when you press Cmd, so cycling stays stable while you tap. A centered preview shows the thumbnail of the currently selected window; nothing is raised until you release Cmd, which raises the selected window. A fresh snapshot is taken on the next Cmd+Tab.
 
 ## How it works
 
 1. A system-wide `CGEventTap` intercepts `KeyDown` + `FlagsChanged` events.
 2. A pure `KeyClassifier` translates each event into a `KeyAction` (`cmdDown`, `cmdUp`, `tabForward`, `tabBackward`, `ignore`).
-3. On Cmd-down, `WindowLister` snapshots on-screen windows on the current Space via `CGWindowListCopyWindowInfo`.
-4. Each Tab tap advances a cursor in a frozen MRU list and calls `WindowRaiser`.
-5. `WindowRaiser` resolves the window's AX element by matching its frame and raises it via `AXUIElementPerformAction(kAXRaiseAction)`.
+3. On Cmd-down, `WindowLister` snapshots on-screen windows on the current Space via `CGWindowListCopyWindowInfo`, and `ThumbnailCapturer` captures each window's content via `CGWindowListCreateImage`.
+4. Each Tab tap advances a cursor in the frozen list and updates a centered `ThumbnailOverlay` — no window is raised during cycling.
+5. On Cmd-up, `WindowRaiser` resolves the selected window's AX element by matching its frame and raises it via `AXUIElementPerformAction(kAXRaiseAction)`.
 
 Only Tab keydowns with Cmd held are consumed; all other keystrokes pass through untouched.
 
@@ -67,7 +70,7 @@ Uses Swift Testing (`import Testing`). The `test.sh` wrapper wires up the `Testi
 ```
 Sources/
   WindowsSwitcherCore/   # Testable core: WindowLister, Switcher, KeyClassifier, WindowRaiser, EventTap
-  WindowsSwitcher/       # App entry point: AppDelegate + menubar status item
+  WindowsSwitcher/       # App entry point: AppDelegate, ThumbnailCapturer, ThumbnailOverlay
 Tests/
   WindowsSwitcherTests/  # Swift Testing suites
 ```
@@ -77,6 +80,7 @@ Tests/
 - **Current Space only** — windows on other Spaces are not included. Cross-Space support is isolated in `WindowLister.currentSpaceWindows()`.
 - **Minimized windows excluded** — unminimizing is slow without a preview overlay.
 - **Private AX API for window identity** — AX does not expose the `CGWindowID` publicly, so windows are matched via the private `_AXUIElementGetWindow` bridge (macOS 10.10+, used by AltTab, DockDoor, Loop). A frame-matching fallback (1pt epsilon) covers apps where the bridge errors but cannot distinguish two same-app windows with identical frames.
+- **Screen Recording permission required** — without it, window thumbnails are blank and the session is a silent no-op (the menubar dot shows amber).
 - **No autostart** — add it as a Login Item or LaunchAgent yourself.
 
 ## License
