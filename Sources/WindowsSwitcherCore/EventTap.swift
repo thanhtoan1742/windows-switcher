@@ -17,6 +17,13 @@ public final class EventTap {
         self.handler = handler
     }
 
+    /// Adds the event tap to the current run loop's common modes. **Must be called
+    /// on the main run loop** — the callback fires on whatever run loop the source
+    /// was added to, and the direct handler (`AppDelegate.handle`) is
+    /// `@MainActor`-isolated, as is the `Switcher` it calls. `ThumbnailOverlay`
+    /// (AppKit-touched) is not yet `@MainActor`-annotated but is reached only via
+    /// `Switcher` on the main thread. Calling from a background thread would race
+    /// on AppKit.
     public func start() throws {
         let mask = CGEventMask(
             (1 << CGEventType.keyDown.rawValue) |
@@ -51,24 +58,46 @@ public final class EventTap {
         guard let userInfo else { return Unmanaged.passRetained(event) }
         let `self` = Unmanaged<EventTap>.fromOpaque(userInfo).takeUnretainedValue()
 
-        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            if let tap = self.tap { CGEvent.tapEnable(tap: tap, enable: true) }
-            return Unmanaged.passRetained(event)
-        }
-
         let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
         let action = KeyClassifier.classify(
             keyCode: keyCode, flags: event.flags, isKeyDown: type == .keyDown
         )
-        switch action {
-        case .tabForward, .tabBackward:
-            self.handler(action)
-            return nil  // consume
-        case .cmdDown, .cmdUp:
-            self.handler(action)
-            return Unmanaged.passRetained(event)  // let Cmd state reach the system
-        case .ignore:
+        switch EventTap.decide(type: type, action: action) {
+        case .reenable:
+            if let tap = self.tap { CGEvent.tapEnable(tap: tap, enable: true) }
             return Unmanaged.passRetained(event)
+        case .consume:
+            self.handler(action)
+            return nil
+        case .passthrough:
+            self.handler(action)
+            return Unmanaged.passRetained(event)
+        case .pass:
+            return Unmanaged.passRetained(event)
+        }
+    }
+}
+
+extension EventTap {
+    enum Decision: Equatable {
+        case pass          // pass event through, don't call handler
+        case consume       // return nil, call handler
+        case passthrough   // pass event, call handler
+        case reenable      // tap was disabled by system; re-enable and pass
+    }
+
+    /// Pure decision logic for the C callback. Extracted so the consume-vs-passthrough
+    /// contract and the tap-re-enable branch are unit-testable without a real
+    /// `CGEventTap`. The side-effecting half (calling `handler`, re-enabling the tap,
+    /// returning nil or the pass-retained event) stays in the callback.
+    static func decide(type: CGEventType, action: KeyAction) -> Decision {
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            return .reenable
+        }
+        switch action {
+        case .tabForward, .tabBackward: return .consume
+        case .cmdDown, .cmdUp:          return .passthrough
+        case .ignore:                   return .pass
         }
     }
 }
