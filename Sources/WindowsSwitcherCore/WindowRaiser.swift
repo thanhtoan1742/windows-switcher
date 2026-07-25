@@ -4,9 +4,11 @@ import CoreGraphics
 
 /// Raises a cross-app window via the Accessibility API. Conforms to `WindowRaising`
 /// so the `Switcher` can stay pure and unit-testable.
-final class WindowRaiser: WindowRaising {
+public final class WindowRaiser: WindowRaising {
+    public init() {}
+
     @discardableResult
-    func raise(_ window: WindowInfo) -> Bool {
+    public func raise(_ window: WindowInfo) -> Bool {
         let app = AXUIElementCreateApplication(window.ownerPID)
         AXUIElementSetMessagingTimeout(app, 0.2)
         var windowsRef: CFTypeRef?

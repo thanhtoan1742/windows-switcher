@@ -1,6 +1,6 @@
 import CoreGraphics
 
-enum EventTapError: Error {
+public enum EventTapError: Error {
     case creationFailed
 }
 
@@ -8,16 +8,16 @@ enum EventTapError: Error {
 /// event to a `KeyAction` via `KeyClassifier` and dispatches it to `handler`. Tab
 /// keydowns that we handle are consumed (return nil); Cmd flag events pass through
 /// so the rest of the system still sees Cmd state.
-final class EventTap {
+public final class EventTap {
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private let handler: (KeyAction) -> Void
 
-    init(handler: @escaping (KeyAction) -> Void) {
+    public init(handler: @escaping (KeyAction) -> Void) {
         self.handler = handler
     }
 
-    func start() throws {
+    public func start() throws {
         let mask = CGEventMask(
             (1 << CGEventType.keyDown.rawValue) |
             (1 << CGEventType.flagsChanged.rawValue)

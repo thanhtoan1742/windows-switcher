@@ -1,6 +1,6 @@
 import CoreGraphics
 
-enum KeyAction {
+public enum KeyAction {
     case cmdDown
     case cmdUp
     case tabForward

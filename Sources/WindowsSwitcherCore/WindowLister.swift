@@ -1,16 +1,16 @@
 import CoreGraphics
 import Foundation
 
-struct WindowInfo: Equatable {
-    let windowID: CGWindowID
-    let ownerPID: pid_t
-    let ownerName: String
-    let bounds: CGRect
-    let layer: Int
-    let alpha: Double
+public struct WindowInfo: Equatable {
+    public let windowID: CGWindowID
+    public let ownerPID: pid_t
+    public let ownerName: String
+    public let bounds: CGRect
+    public let layer: Int
+    public let alpha: Double
 }
 
-enum WindowLister {
+public enum WindowLister {
     /// Filter raw CGWindowList entries down to actual switchable windows, preserving
     /// the front-to-back order returned by the Window Server (index 0 == frontmost).
     static func filter(_ raw: [[String: Any]]) -> [WindowInfo] {
@@ -38,7 +38,7 @@ enum WindowLister {
     /// Live fetch from the Window Server. `.optionOnScreenOnly` is Space-aware so this
     /// returns only windows on the current Space. Cross-Space support would change only
     /// this method (see spec "Non-Goals").
-    static func currentSpaceWindows() -> [WindowInfo] {
+    public static func currentSpaceWindows() -> [WindowInfo] {
         guard let raw = CGWindowListCopyWindowInfo(
             [.optionOnScreenOnly, .excludeDesktopElements],
             kCGNullWindowID
