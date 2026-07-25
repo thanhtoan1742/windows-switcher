@@ -114,18 +114,20 @@ let aspect = maxCell.height / maxCell.width     // 0.75
 
 let availWidth = screen.visibleFrame.width - 2 * margin
 let naturalCellWidth = (availWidth - (n - 1) * spacing) / n
-let cellWidth  = min(maxCell.width, max(minCell.width, naturalCellWidth))
+let cellWidth  = min(maxCell.width, naturalCellWidth)
 let cellHeight = cellWidth * aspect
 ```
 
 - With few windows, `cellWidth` hits `maxCell.width` (240) → large
   thumbnails.
-- With many windows, `cellWidth` shrinks toward `minCell.width` (80) →
-  small but readable thumbnails.
-- Edge case: at very high window counts (≈18+ on a typical screen) even
-  `minCellWidth` overflows the available width. The row is centered and
-  extends symmetrically off both screen edges. This is a rare edge case
-  and acceptable; documented as a limitation.
+- With many windows, `cellWidth` shrinks **past** `minCell.width` (80) →
+  small thumbnails, but all remain visible (no off-screen overflow).
+- Edge case: at very high window counts (≈18+ on a typical screen)
+  `naturalCellWidth` drops below `minCell.width` (80pt). The row
+  continues to shrink-to-fit rather than clamping to `minCell.width`, so
+  thumbnails become very small but **all remain visible within the screen
+  width** — no off-screen overflow. This trades legibility for guaranteed
+  visibility.
 
 ### Row layout — manual, no Auto Layout
 
@@ -217,8 +219,8 @@ Manual verification covers:
 - Tab moves the ring right; Shift+Tab moves it left; wraps at both ends.
 - All thumbnails remain the same size; only the ring moves.
 - Release Cmd raises the ringed window and hides the row.
-- With many windows, thumbnails shrink to fit; at extreme counts the row
-  overflows symmetrically.
+- With many windows, thumbnails shrink to fit; at extreme counts cells
+  shrink below 80pt but all remain visible (no off-screen overflow).
 
 ## Performance / Footprint (unchanged from preview-overlay design)
 

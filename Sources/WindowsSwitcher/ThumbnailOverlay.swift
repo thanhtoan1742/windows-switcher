@@ -15,6 +15,7 @@ final class ThumbnailOverlay: WindowPreviewing {
     private static let margin: CGFloat = 40
     private static let spacing: CGFloat = 8
     private static let maxCell = CGSize(width: 240, height: 180)
+    // Reference only; not enforced (shrink-to-fit drops the floor to avoid overflow).
     private static let minCell = CGSize(width: 80, height: 60)
     private static let aspect = maxCell.height / maxCell.width   // 0.75 (4:3)
     private static let borderWidth: CGFloat = 3
@@ -32,16 +33,18 @@ final class ThumbnailOverlay: WindowPreviewing {
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
+        panel.ignoresMouseEvents = true
     }
 
     func show(thumbnails: [(WindowInfo, CGImage)], startingAt index: Int) {
-        guard !thumbnails.isEmpty else { return }
+        guard !thumbnails.isEmpty,
+              let screen = NSScreen.screens.first else { return }
         tearDownCells()
         pairs = thumbnails
-        let cellSize = computeCellSize(count: pairs.count)
+        let cellSize = computeCellSize(count: pairs.count, screen: screen)
         buildCells(cellSize: cellSize)
         layoutRow(cellSize: cellSize)
-        sizeAndCenterPanel(cellSize: cellSize)
+        sizeAndCenterPanel(cellSize: cellSize, screen: screen)
         applyImages()
         panel.orderFront(nil)
         guard pairs.indices.contains(index) else { return }
@@ -55,8 +58,7 @@ final class ThumbnailOverlay: WindowPreviewing {
             imageViews[selectedIndex].layer?.borderWidth = 0
         }
         selectedIndex = index
-        imageViews[index].layer?.borderWidth = ThumbnailOverlay.borderWidth
-        imageViews[index].layer?.borderColor = NSColor.controlAccentColor.cgColor
+        applyRing(to: index)
     }
 
     func hide() {
@@ -67,14 +69,13 @@ final class ThumbnailOverlay: WindowPreviewing {
 
     // MARK: - Cell sizing
 
-    private func computeCellSize(count: Int) -> CGSize {
-        guard let screen = NSScreen.main else {
-            return ThumbnailOverlay.maxCell
-        }
+    private func computeCellSize(count: Int, screen: NSScreen) -> CGSize {
         let availWidth = screen.visibleFrame.width - 2 * ThumbnailOverlay.margin
         let naturalWidth = (availWidth - CGFloat(count - 1) * ThumbnailOverlay.spacing) / CGFloat(count)
-        let cellWidth = min(ThumbnailOverlay.maxCell.width,
-                            max(ThumbnailOverlay.minCell.width, naturalWidth))
+        // Shrink-to-fit with no floor: when too many windows would overflow
+        // the screen at minCell.width (80pt), cells shrink below 80pt rather
+        // than extending off-screen. Trades legibility for guaranteed visibility.
+        let cellWidth = min(ThumbnailOverlay.maxCell.width, naturalWidth)
         let cellHeight = cellWidth * ThumbnailOverlay.aspect
         return CGSize(width: cellWidth, height: cellHeight)
     }
@@ -103,12 +104,11 @@ final class ThumbnailOverlay: WindowPreviewing {
         }
     }
 
-    private func sizeAndCenterPanel(cellSize: CGSize) {
+    private func sizeAndCenterPanel(cellSize: CGSize, screen: NSScreen) {
         let n = imageViews.count
         let rowWidth = CGFloat(n) * cellSize.width + CGFloat(n - 1) * ThumbnailOverlay.spacing
         let rowHeight = cellSize.height
         panel.setContentSize(CGSize(width: rowWidth, height: rowHeight))
-        guard let screen = NSScreen.main else { return }
         let frame = screen.visibleFrame
         let x = frame.midX - rowWidth / 2
         let y = frame.midY - rowHeight / 2
